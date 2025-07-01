@@ -29,12 +29,21 @@ def load_model(model_family: str, model_size: str, model_type: str, device: str)
         else:
             tokenizer = AutoTokenizer.from_pretrained(str(model_path))
             model = AutoModelForCausalLM.from_pretrained(str(model_path))
-        if model_family == "Gemma2": # Gemma2 requires bfloat16 precision which is only available on new GPUs
-            model = model.to(t.bfloat16) # Convert the model to bfloat16 precision
+        if model_family == "Gemma2":
+            #edit1 begins
+            tokenizer.add_special_tokens({
+                "bos_token": "<bos>",
+                "eos_token": "<eos>",
+                "pad_token": "<pad>",
+                "additional_special_tokens": ["<|user|>", "<|assistant|>"]
+                })
+            model.resize_token_embeddings(len(tokenizer))
+            model = model.to(t.bfloat16)
         else:
-            model = model.half()  # storing model in float32 precision -> conversion to float16
+            model = model.half()
+            #edit1 ends
         return tokenizer, model.to(device)
-    except Exception as e:
+    except Exception as e:   
         print(f"Error loading model: {e}")
         raise
 
@@ -61,7 +70,13 @@ def get_acts(statements, tokenizer, model, layers, device):
     # get activations
     acts = {layer : [] for layer in layers}
     for statement in tqdm(statements):
-        input_ids = tokenizer.encode(statement, return_tensors="pt").to(device)
+        #edit2 begins
+        if hasattr(model.config, "model_type") and "gemma" in model.config.model_type:
+            prompt = f"<bos><|user|>\n{statement}\n<|assistant|>\n"
+        else:
+            prompt = statement
+        input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
+        #edit2 ends
         model(input_ids)
         for layer, hook in zip(layers, hooks):
             acts[layer].append(hook.out[0, -1])
