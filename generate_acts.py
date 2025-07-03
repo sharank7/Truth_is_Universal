@@ -32,13 +32,6 @@ def load_model(model_family: str, model_size: str, model_type: str, device: str)
             model = AutoModelForCausalLM.from_pretrained(str(model_path))
         if model_family == "Gemma2":
             #edit1 begins
-            tokenizer.add_special_tokens({
-                "bos_token": "<bos>",
-                "eos_token": "<eos>",
-                "pad_token": "<pad>",
-                "additional_special_tokens": ["<|user|>", "<|assistant|>"]
-                })
-            model.resize_token_embeddings(len(tokenizer))
             model = model.to(t.bfloat16)
         else:
             model = model.half()
@@ -80,11 +73,6 @@ def get_acts(statements, tokenizer, model, layers, device, save_dir, batch_offse
     acts = {name: [] for name in hooks}
 
     for statement in tqdm(statements):
-        if hasattr(model.config, "model_type") and "gemma" in model.config.model_type:
-            prompt = f"<bos><|user|>\n{statement}\n<|assistant|>\n"
-        else:
-            prompt = statement
-
         input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
         model(input_ids)
 
