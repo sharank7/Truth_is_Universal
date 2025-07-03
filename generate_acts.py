@@ -11,8 +11,9 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 class Hook:
-    def __init__(self):
+    def __init__(self, name):
         self.out = None
+        self.name = name
 
     def __call__(self, module, module_inputs, module_outputs):
         self.out, _ = module_outputs
