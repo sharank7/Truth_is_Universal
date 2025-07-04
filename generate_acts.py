@@ -73,7 +73,7 @@ def get_acts(statements, tokenizer, model, layers, device, save_dir, batch_offse
     acts = {name: [] for name in hooks}
 
     for statement in tqdm(statements):
-        input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
+        input_ids = tokenizer.encode(statement, return_tensors="pt").to(device)
         model(input_ids)
 
         for name, hook in hooks.items():
